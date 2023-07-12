@@ -1,0 +1,1 @@
+# Creating same endpoint like default huggingface
