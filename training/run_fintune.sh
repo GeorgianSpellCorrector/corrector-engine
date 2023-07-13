@@ -1,0 +1,27 @@
+!python finetune.py \
+    --model_name_or_path "ZurabDz/BartGeoV2" \
+    --do_train \
+    --do_eval \
+    --evaluation_strategy "steps" \
+    --train_file /kaggle/input/spelling-dataset-v4/train_v3.ka.csv \
+    --validation_file /kaggle/input/spelling-dataset-v4/test_v3.ka.csv \
+    --output_dir ./models/bart-base-en-mix/ \
+    --overwrite_output_dir \
+    --per_device_train_batch_size 128 \
+    --per_device_eval_batch_size 128 \
+    --gradient_accumulation_steps 1 \
+    --learning_rate "4e-4" \
+    --num_train_epochs 3 \
+    --predict_with_generate \
+    --logging_steps "100" \
+    --save_total_limit "4" \
+    --max_target_length 64 \
+    --max_source_length 64 \
+    --fp16 \
+    --report_to "none" \
+    --save_strategy 'steps' \
+    --eval_steps 20000 \
+    --save_steps 5000 \
+    --push_to_hub True \
+    --hub_model_id "ZurabDz/geo-spell-check-v8" \
+    --hub_token "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" \
