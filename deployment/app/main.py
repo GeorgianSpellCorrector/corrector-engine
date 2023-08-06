@@ -9,7 +9,7 @@ from routers.utils import CorrectorRequest
 settings = FastAPISettings()
 app = FastAPI(**settings.model_dump())
 
-app.include_router(api, prefix='/api')
+app.include_router(api, prefix="/api")
 
 app.add_middleware(
     CORSMiddleware,

@@ -1,29 +1,43 @@
 from transformers import AutoTokenizer, PreTrainedTokenizerFast
-from tokenizers import Tokenizer, models, normalizers, pre_tokenizers, decoders, trainers, Regex, processors
+from tokenizers import (
+    Tokenizer,
+    models,
+    normalizers,
+    pre_tokenizers,
+    decoders,
+    trainers,
+    Regex,
+    processors,
+)
 
 
 def _download_tokenizer(tokenizer_path_or_name, seq_length, cache_dir=None):
     try:
         tokenizer = AutoTokenizer.from_pretrained(
-            tokenizer_path_or_name, cache_dir=cache_dir)
+            tokenizer_path_or_name, cache_dir=cache_dir
+        )
         tokenizer.model_max_length = seq_length
     except OSError as error_msg:
         raise OSError(
-            f"Invalid huggingface tokenizer {tokenizer_path_or_name} given: {error_msg}")
+            f"Invalid huggingface tokenizer {tokenizer_path_or_name} given: {error_msg}"
+        )
     return tokenizer
 
 
-def load_tokenizer(tokenizer_path_or_name, seq_length=512, vocab_size=None, cache_dir=None):
+def load_tokenizer(
+    tokenizer_path_or_name, seq_length=512, vocab_size=None, cache_dir=None
+):
     """Load a tokenizer from disk/huggingface. This will never construct a new tokenizer."""
     try:
         tokenizer = AutoTokenizer.from_pretrained(
-            tokenizer_path_or_name, model_max_length=seq_length)
+            tokenizer_path_or_name, model_max_length=seq_length
+        )
     except FileNotFoundError:
-        tokenizer = _download_tokenizer(
-            tokenizer_path_or_name, seq_length, cache_dir)
+        tokenizer = _download_tokenizer(tokenizer_path_or_name, seq_length, cache_dir)
     if vocab_size is not None and tokenizer.vocab_size != vocab_size:
         raise ValueError(
-            f"Loaded tokenizer with vocab_size {tokenizer.vocab_size} incompatible with given vocab.")
+            f"Loaded tokenizer with vocab_size {tokenizer.vocab_size} incompatible with given vocab."
+        )
     return tokenizer
 
 
@@ -39,13 +53,17 @@ def _get_sane_token_args():
     )
 
 
-def _get_sane_normalizers(force_english_keyboard=False, force_lowercase=False, strip_accents=False, whitespace_escape=False):
+def _get_sane_normalizers(
+    force_english_keyboard=False,
+    force_lowercase=False,
+    strip_accents=False,
+    whitespace_escape=False,
+):
     """original rules as in XLNET with optional modifications. force_english_keyboard is actually an ascii normalization."""
     normalize_ops = []
     normalize_ops.append(normalizers.Replace("``", '"'))
     normalize_ops.append(normalizers.Replace("''", '"'))
-    normalize_ops.append(
-        normalizers.NFD() if strip_accents else normalizers.NFKC())
+    normalize_ops.append(normalizers.NFD() if strip_accents else normalizers.NFKC())
     if force_lowercase:
         normalize_ops.append(normalizers.Lowercase())
     if strip_accents:
@@ -69,7 +87,7 @@ def _construct_tokenizer(raw_datasets, cfg_data, known_tokens=[]):
 
         def batch_iterator(batch_size=4096):
             for i in range(0, len_dataset, batch_size):
-                yield raw_datasets[i: i + batch_size]["text"]
+                yield raw_datasets[i : i + batch_size]["text"]
 
     except TypeError:
         # streaming dataset
@@ -100,16 +118,18 @@ def _construct_tokenizer(raw_datasets, cfg_data, known_tokens=[]):
         tokenizer.add_tokens(known_tokens)
 
         tokenizer.normalizer = normalizer_sequence
-        tokenizer.pre_tokenizer = pre_tokenizers.ByteLevel(
-            add_prefix_space=True)
+        tokenizer.pre_tokenizer = pre_tokenizers.ByteLevel(add_prefix_space=True)
         tokenizer.decoder = decoders.ByteLevel()
 
         trainer = trainers.BpeTrainer(
-            vocab_size=cfg_data.vocab_size, min_frequency=2, special_tokens=list(set(special_token_args.values()))
+            vocab_size=cfg_data.vocab_size,
+            min_frequency=2,
+            special_tokens=list(set(special_token_args.values())),
         )
     elif cfg_data.tokenizer == "WordPiece":
-        tokenizer = Tokenizer(models.WordPiece(
-            unk_token=special_token_args["unk_token"]))
+        tokenizer = Tokenizer(
+            models.WordPiece(unk_token=special_token_args["unk_token"])
+        )
         tokenizer.add_tokens(known_tokens)
 
         tokenizer.normalizer = normalizer_sequence
@@ -117,7 +137,9 @@ def _construct_tokenizer(raw_datasets, cfg_data, known_tokens=[]):
         tokenizer.decoder = decoders.WordPiece(prefix="##")
 
         trainer = trainers.WordPieceTrainer(
-            vocab_size=cfg_data.vocab_size, special_tokens=list(set(special_token_args.values())))
+            vocab_size=cfg_data.vocab_size,
+            special_tokens=list(set(special_token_args.values())),
+        )
     elif cfg_data.tokenizer == "WordPieceBERT":
         # Sanity check tokenizer
         tokenizer = Tokenizer(models.WordPiece(unk_token="<unk>"))
@@ -127,15 +149,20 @@ def _construct_tokenizer(raw_datasets, cfg_data, known_tokens=[]):
         tokenizer.decoder = decoders.WordPiece(prefix="##")
 
         trainer = trainers.WordPieceTrainer(
-            vocab_size=cfg_data.vocab_size, special_tokens=list(set(special_token_args.values())))
+            vocab_size=cfg_data.vocab_size,
+            special_tokens=list(set(special_token_args.values())),
+        )
     elif cfg_data.tokenizer == "WordLevel":
-        tokenizer = Tokenizer(models.WordLevel(
-            unk_token=special_token_args["unk_token"]))
+        tokenizer = Tokenizer(
+            models.WordLevel(unk_token=special_token_args["unk_token"])
+        )
         tokenizer.add_tokens(known_tokens)
         tokenizer.normalizer = normalizer_sequence
         tokenizer.pre_tokenizer = pre_tokenizers.Whitespace()
         trainer = trainers.WordLevelTrainer(
-            vocab_size=cfg_data.vocab_size, special_tokens=list(set(special_token_args.values())))
+            vocab_size=cfg_data.vocab_size,
+            special_tokens=list(set(special_token_args.values())),
+        )
     elif cfg_data.tokenizer == "SentencePieceBPE":
         """ref https://github.com/huggingface/tokenizers/blob/main/bindings/python/py_src/tokenizers/implementations/sentencepiece_bpe.py"""
         tokenizer = Tokenizer(models.BPE())
@@ -143,21 +170,23 @@ def _construct_tokenizer(raw_datasets, cfg_data, known_tokens=[]):
 
         tokenizer.normalizer = normalizer_sequence
         tokenizer.pre_tokenizer = pre_tokenizers.Metaspace(
-            replacement="▁", add_prefix_space=True)
-        tokenizer.decoder = decoders.Metaspace(
-            replacement="▁", add_prefix_space=True)
+            replacement="▁", add_prefix_space=True
+        )
+        tokenizer.decoder = decoders.Metaspace(replacement="▁", add_prefix_space=True)
 
         trainer = trainers.BpeTrainer(
-            vocab_size=cfg_data.vocab_size, min_frequency=2, special_tokens=list(set(special_token_args.values()))
+            vocab_size=cfg_data.vocab_size,
+            min_frequency=2,
+            special_tokens=list(set(special_token_args.values())),
         )
     elif cfg_data.tokenizer == "SentencePieceUnigram":
         tokenizer = Tokenizer(models.Unigram())
         tokenizer.add_tokens(known_tokens)
         tokenizer.normalizer = normalizer_sequence
         tokenizer.pre_tokenizer = pre_tokenizers.Metaspace(
-            replacement="▁", add_prefix_space=True)
-        tokenizer.decoder = decoders.Metaspace(
-            replacement="▁", add_prefix_space=True)
+            replacement="▁", add_prefix_space=True
+        )
+        tokenizer.decoder = decoders.Metaspace(replacement="▁", add_prefix_space=True)
         special_tokens = list(set(v for k, v in special_token_args.items()))
 
         trainer = trainers.UnigramTrainer(
@@ -166,16 +195,15 @@ def _construct_tokenizer(raw_datasets, cfg_data, known_tokens=[]):
             unk_token=special_token_args["unk_token"],
         )
     else:
-        raise ValueError(
-            f"Invalid tokenization strategy {cfg_data.tokenizer} given.")
+        raise ValueError(f"Invalid tokenization strategy {cfg_data.tokenizer} given.")
 
     # Construct tokenizer
-    tokenizer.train_from_iterator(
-        batch_iterator(), trainer=trainer, length=len_dataset)
+    tokenizer.train_from_iterator(batch_iterator(), trainer=trainer, length=len_dataset)
 
     if tokenizer.get_vocab_size() != cfg_data.vocab_size:
         raise RuntimeError(
-            f"Tokenizer generation failure. Vocab size of trained tokenizer is {tokenizer.get_vocab_size()}.")
+            f"Tokenizer generation failure. Vocab size of trained tokenizer is {tokenizer.get_vocab_size()}."
+        )
 
     # Postprocess:
     cls_token_id = tokenizer.token_to_id("[CLS]")
@@ -204,9 +232,18 @@ def _construct_tokenizer(raw_datasets, cfg_data, known_tokens=[]):
 
 def construct_tokenizer(raw_datasets, cfg_data, path, known_tokens=[]):
     """Construct a new tokenizer. This may include downloading from huggingface."""
-    if cfg_data.tokenizer not in ["BPE", "Unigram", "WordLevel", "WordPiece", "WordPieceBERT", "SentencePieceUnigram", "SentencePieceBPE"]:
+    if cfg_data.tokenizer not in [
+        "BPE",
+        "Unigram",
+        "WordLevel",
+        "WordPiece",
+        "WordPieceBERT",
+        "SentencePieceUnigram",
+        "SentencePieceBPE",
+    ]:
         tokenizer = _download_tokenizer(
-            cfg_data.tokenizer, cfg_data.seq_length, cache_dir=path)
+            cfg_data.tokenizer, cfg_data.seq_length, cache_dir=path
+        )
     else:
         tokenizer = _construct_tokenizer(raw_datasets, cfg_data, known_tokens)
     tokenizer.name = f"{cfg_data.tokenizer}-{cfg_data.name}-{cfg_data.vocab_size}.json"

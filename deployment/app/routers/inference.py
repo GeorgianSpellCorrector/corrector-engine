@@ -5,7 +5,7 @@ from routers.utils import inference
 router = APIRouter()
 
 
-@router.post('/correct_sentences')
+@router.post("/correct_sentences")
 async def correct_sentences(request: CorrectorRequest):
     corrected = inference(request)
 

@@ -3,9 +3,9 @@ from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 from models.serializers import CorrectorRequest
 
 
-DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
-USE_HALF = True if DEVICE == 'cuda' else False
-MODEL_PATH = 'ZurabDz/geo-spell-check-v8'
+DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+USE_HALF = True if DEVICE == "cuda" else False
+MODEL_PATH = "ZurabDz/geo-spell-check-v8"
 MAX_LENGTH = 64
 TOP_K = 30
 TOP_P = 0.95
@@ -17,7 +17,7 @@ model.eval()
 
 
 def inference(input: CorrectorRequest):
-    input_ids = tokenizer(input.texts, return_tensors='pt', padding=True)['input_ids']
+    input_ids = tokenizer(input.texts, return_tensors="pt", padding=True)["input_ids"]
     input_ids = input_ids.to(DEVICE)
 
     with torch.no_grad():
@@ -27,7 +27,7 @@ def inference(input: CorrectorRequest):
             do_sample=True,
             top_k=TOP_K,
             top_p=TOP_P,
-            pad_token_id=model.config.pad_token_id
+            pad_token_id=model.config.pad_token_id,
         )
 
     # Decode output
