@@ -79,7 +79,7 @@ def _get_sane_normalizers(
     return normalizers.Sequence(normalize_ops)
 
 
-def _construct_tokenizer(raw_datasets, cfg_data, known_tokens=[]):
+def _construct_tokenizer(raw_datasets, cfg_data, known_tokens):
     """The actual generation instructions for a new tokenizer. Might make this more scriptable in the future...
     Follows closely along with https://huggingface.co/course/chapter6"""
     try:
@@ -230,9 +230,10 @@ def _construct_tokenizer(raw_datasets, cfg_data, known_tokens=[]):
     return wrapped_tokenizer
 
 
-def construct_tokenizer(raw_datasets, cfg_data, path, known_tokens=[]):
-    """Construct a new tokenizer. This may include downloading from huggingface."""
-    if cfg_data.tokenizer not in [
+def train_tokenizer(raw_datasets, cfg_data, known_tokens=None):
+    """Construct a new tokenizer by training on custom data"""
+
+    expected_tokenizer_names = [
         "BPE",
         "Unigram",
         "WordLevel",
@@ -240,9 +241,16 @@ def construct_tokenizer(raw_datasets, cfg_data, path, known_tokens=[]):
         "WordPieceBERT",
         "SentencePieceUnigram",
         "SentencePieceBPE",
-    ]:
-        tokenizer = _download_tokenizer(
-            cfg_data.tokenizer, cfg_data.seq_length, cache_dir=path
+    ]
+
+    if not known_tokens:
+        known_tokens = []
+
+    if cfg_data.tokenizer not in expected_tokenizer_names:
+        raise Exception(
+            f"""
+            Currently supporting training given tokenizers: {expected_tokenizer_names}
+            """
         )
     else:
         tokenizer = _construct_tokenizer(raw_datasets, cfg_data, known_tokens)
